@@ -25,7 +25,7 @@ Docker-Compose를 이용하여 젠킨스 이미지를 설치하고 빌드 환경
 #### 사전 패키지 설치
 
 ```bash
-sudo atp update
+sudo apt update
 
 sudo apt-get install -y ca-certificates \
     curl \
@@ -173,6 +173,10 @@ gitlab, docker, SSH관련 플러그인을 설치해준다
 
 소스 코드 관리란에 들어가서 레포지토리를 등록한다
 
+※ Branches to build의 Branch Specifier에 빌드할 레포지토리의 브랜치를 등록해준다
+
+- 예) master, develop, develop/* ... 등
+
 ![image](https://user-images.githubusercontent.com/93081720/191666699-c2ce269c-f271-4e12-95c2-60e41b08cd8d.png)
 
 <br>
@@ -188,9 +192,9 @@ gitlab, docker, SSH관련 플러그인을 설치해준다
 #### 연결된 계정 등록
 
 - username
-  - 깃랩과 연결된 메일
+  - 깃랩과 연결된 이메일
 - Password
-  - 깃랩의 비밀번호
+  - 깃랩의 비밀번호(default: `S + 이메일 + 7`)
 - ID
   - 아무 아이디나 입력해도 된다고 하지만, 깃랩의 아이디를 넣는 것을 권장함(에러가 발생하는 경우가 있어서)
 
@@ -202,7 +206,7 @@ gitlab, docker, SSH관련 플러그인을 설치해준다
 
 #### 빌드 유발
 
-아래 그림과 같이 체크박스에 체크한 뒤에 고급을 눌러서
+아래 그림과 같이 체크박스에 체크(`Push Events`, `Opened Merge Request Events`, `Approved Merge Request Events`, `Comments`)한 뒤에 고급을 눌러서
 
 ![image](https://user-images.githubusercontent.com/93081720/191669807-ae8e4349-6fd1-4b6b-bc00-f0b6cc5f98a3.png)
 
@@ -215,6 +219,20 @@ gitlab, docker, SSH관련 플러그인을 설치해준다
 해당 토큰은 gitlab과 연결하기 위해 사용되는 토큰입니다.
 
 ![image](https://user-images.githubusercontent.com/93081720/191669972-2c0470d3-d3fb-403b-9362-c518a6464309.png)
+
+**※ 참고**
+
+Allow branches에서`Allow all branches to trigger this job`을 체크해두면 모든 브랜치에 대해서 타겟 브랜치로 머지 이벤트가 발생했을 때 웹훅이 인식하여 빌드를 진행한다.
+
+특정 브랜치에 대해서 타겟 브랜치로의 머지 이벤트를 인식하게 하려면 `Filter branches by name`를 선택해서 브랜치 이름을 적어주면 됩니다.
+
+또는 정규식, 라벨링 등으로 타겟 브랜치 머지 이벤트를 인식하게 할 수도 있습니다.
+
+- 예시) Filter branches by names
+  - Include에 포함할 특정 브랜치명을, Exclude에는 제외할 특정 브랜치명을 적을 수 있습니다.
+  - 단, 이 때 `following patterns don't match any branch in source repository: [입력한 브랜치명]` 메세지가 나오는데 무시하고 진행해도 됩니다.
+
+![화면 캡처 2022-10-30 140014](https://user-images.githubusercontent.com/93081720/198865078-591ac675-21fc-437e-9301-a3615bde1761.png)
 
 <br>
 
@@ -230,21 +248,23 @@ URL에는 `http://배포서버도메인:9090/project/생성한 jenkins 프로젝
 
 Secret token에는 아까 위에서 젠킨스 프로젝트를 생성할 때 저장해둔 값을 입력합니다.
 
-빌드 유발 Trigger로, `Push events`, `Merge request events`를 설정합니다.
+빌드 유발 Trigger로, `Push events`를 설정합니다. 대상 Branch는 연동을 원하는 브랜치를 선택합니다.
 
-대상 Branch는 연동을 원하는 브랜치를 선택합니다.
+**※ 주의!**
 
-![image](https://user-images.githubusercontent.com/93081720/191671232-bfcc43cf-5539-4b93-8661-7120ad70683a.png)
+`Merge request events`를 체크하면 안 됩니다. => 머지에 대해서 빌드를 진행해야하니 간혹 체크하라는 글이 있는데, `Merge request events`를 체크해버리면 머지 요청이 생성되거나 머지 요청이 업데이트 또는 머지 요청이 머지되었을 때 깃랩이 웹 훅 요청을 URL( `http://배포서버도메인:9090/project/생성한 jenkins 프로젝트이름/`)로 보내버리기 때문에 젠킨스가 이를 인식하여 빌드를 진행합니다.
+
+즉, 빌드는 머지 요청이 `머지가 되어` 타겟 브랜치로 해당 내용이 `푸시`되었을 때만 진행되어야 하는 것이지, 단순히 머지 요청이 생성되거나 업데이트 되었을 때도 진행되면 안 됩니다. 우리가 위에서 `Opened Merge Request Events`, `Approved Merge Request Events`에 체크를 한 이유는 나중에 MM에 해당 행동에 대해서 젠킨스가 빌드 알림을 보내기 위함이지 실제로 해당 행동에 대해서 빌드를 진행하기 위함이 아닙니다.
+
+![image](https://user-images.githubusercontent.com/93081720/198864874-eb577c0e-2ea0-4654-9dab-38c3dc804f81.png)
 
 
 
-완료했다면 하단의 Add Webhook 버튼을 눌러 webhook을 생성합니다
+완료했다면 하단의 `Add Webhook` 버튼을 눌러 webhook을 생성합니다.
 
+생성을 다하고 나면, 생성된 웹훅에서 `test`를 누르고 위에서 체크했던 `Push events`에 대해 테스트를 진행합니다.
 
-
-![image](https://user-images.githubusercontent.com/93081720/191671594-03373438-87e3-4a36-ad13-8739a08993b1.png)
-
-생성을 다하고 나면, 생성된 웹훅에서 test, push event를 눌러서 테스트를 진행합니다.
+![image](https://user-images.githubusercontent.com/93081720/198864979-30fb7add-12ca-474a-8481-ab06e00ed4da.png)
 
 200이 나오면 성공입니다.
 
@@ -269,7 +289,7 @@ sudo docker exec -it jenkins bash
 - 사전 패키지 설치
 
 ```bash
-sudo atp update
+sudo apt update
 
 sudo apt-get install -y ca-certificates \
     curl \

@@ -46,6 +46,28 @@ sudo systemctl status mysql
 sudo mysql -u root -p
 ```
 
+#### 사용할 계정 생성
+
+- mysql 테이블 접근
+
+```sql
+use mysql;
+```
+
+- 사용할 계정 생성
+
+```sql
+create user '{username}'@'{host}' identified by '{비밀번호}';
+```
+
+예)
+
+```sql
+create user 'nfteam'@'%' identified by 'asd123';
+```
+
+- `%`: 외부 호스트 접근 권한 부여
+
 #### 유저 권한 설정
 
 mysql이라는 DB의 user 테이블에 모든 사용자의 정보가 저장되어 있음
@@ -86,28 +108,6 @@ sudo service mysql restart
 create database {사용할 DB명};
 show databases;
 ```
-
-#### 사용할 계정 생성
-
-- mysql 테이블 접근
-
-```sql
-use mysql;
-```
-
-- 사용할 계정 생성
-
-```sql
-create user '{username}'@'{host}' identified by '{비밀번호}';
-```
-
-예)
-
-```sql
-create user 'nfteam'@'%' identified by 'asd123';
-```
-
-- `%`: 외부 호스트 접근 권한 부여
 
 #### 계정 접근 권한 부여
 
